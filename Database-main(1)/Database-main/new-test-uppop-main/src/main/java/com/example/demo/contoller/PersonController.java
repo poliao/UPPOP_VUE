@@ -67,7 +67,7 @@ public class PersonController {
         }
     }
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody Map<String, String> credentials) {
+    public ResponseEntity<Object> login(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");
         String password = credentials.get("password");
 
@@ -75,10 +75,8 @@ public class PersonController {
             Optional<Person> personOptional = Optional.ofNullable(personRepository.findByUsernameAndPassword(username, password));
 
             if (personOptional.isPresent()) {
-                Long userId = personOptional.get().getIdUser();
-
-                // Return user ID along with success message
-                return new ResponseEntity<>("Login successful. User ID: " + userId, HttpStatus.OK);
+                Person person = personOptional.get();
+                return new ResponseEntity<>(person, HttpStatus.OK);
             } else {
                 return new ResponseEntity<>("Invalid username or password", HttpStatus.UNAUTHORIZED);
             }
