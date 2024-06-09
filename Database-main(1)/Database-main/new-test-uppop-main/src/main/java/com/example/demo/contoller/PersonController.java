@@ -1,88 +1,72 @@
 package com.example.demo.contoller;
 
-
 import com.example.demo.model.Person;
-import com.example.demo.repository.PersonRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.example.demo.service.PersonService;
+import com.example.demo.service.TokenService;
+import com.example.demo.service.AuthenticationService;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
-@CrossOrigin(origins = "http://localhost:8081")
 @RestController
-@RequestMapping("/persons")
+@RequestMapping("/api/persons")
 public class PersonController {
 
     @Autowired
-    private PersonRepository personRepository;
+    private PersonService personService;
 
+    @Autowired
+    private AuthenticationService authenticationService;
 
-    // API สำหรับการเพิ่ม Person
-    @PostMapping("/add")
-    public ResponseEntity<Person> addPerson(@RequestBody Person person) {
-        Person savedPerson = personRepository.save(person);
-        return new ResponseEntity<>(savedPerson, HttpStatus.CREATED);
+    @Autowired
+    private TokenService tokenService;
+
+    @GetMapping
+    public List<Person> getAllPersons() {
+        return personService.getAllPersons();
     }
 
-    // API สำหรับการดึงข้อมูลทั้งหมด
-    @GetMapping("/all")
-    public ResponseEntity<List<Person>> getAllPersons() {
-        List<Person> persons = personRepository.findAll();
-        return new ResponseEntity<>(persons, HttpStatus.OK);
-    }
-
-    // API สำหรับการดึงข้อมูลตาม ID
     @GetMapping("/{id}")
     public ResponseEntity<Person> getPersonById(@PathVariable Long id) {
-        return personRepository.findById(id)
-                .map(person -> new ResponseEntity<>(person, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+        Optional<Person> person = personService.getPersonById(id);
+        return person.map(ResponseEntity::ok)
+                     .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // API สำหรับการอัปเดต Person
-    @PutMapping("/update/{id}")
-    public ResponseEntity<Person> updatePerson(@PathVariable Long id, @RequestBody Person updatedPerson) {
-        return personRepository.findById(id)
-                .map(existingPerson -> {
-                    updatedPerson.setIdUser(existingPerson.getIdUser());
-                    Person savedPerson = personRepository.save(updatedPerson);
-                    return new ResponseEntity<>(savedPerson, HttpStatus.OK);
-                })
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    @PostMapping
+    public Person createPerson(@RequestBody Person person) {
+        return personService.createPerson(person);
     }
 
-    // API สำหรับการลบ Person
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Void> deletePerson(@PathVariable Long id) {
-        if (personRepository.existsById(id)) {
-            personRepository.deleteById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-    }
-    @PostMapping("/login")
-    public ResponseEntity<Object> login(@RequestBody Map<String, String> credentials) {
-        String username = credentials.get("username");
-        String password = credentials.get("password");
-
+    @PutMapping("/{id}")
+    public ResponseEntity<Person> updatePerson(@PathVariable Long id, @RequestBody Person personDetails) {
         try {
-            Optional<Person> personOptional = Optional.ofNullable(personRepository.findByUsernameAndPassword(username, password));
-
-            if (personOptional.isPresent()) {
-                Person person = personOptional.get();
-                return new ResponseEntity<>(person, HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Invalid username or password", HttpStatus.UNAUTHORIZED);
-            }
-        } catch (EntityNotFoundException e) {
-            return new ResponseEntity<>("Invalid username or password", HttpStatus.UNAUTHORIZED);
+            Person updatedPerson = personService.updatePerson(id, personDetails);
+            return ResponseEntity.ok(updatedPerson);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePerson(@PathVariable Long id) {
+        personService.deletePerson(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Person person) {
+        // เช็คการยืนยันตัวตนของผู้ใช้
+        if (authenticationService.authenticate(person.getEmail(), person.getPassword())) {
+            String token = tokenService.generateToken(person.getEmail());
+            return ResponseEntity.ok(Map.of("token", token));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
 }

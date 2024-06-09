@@ -36,7 +36,7 @@
 </template>
 
 <script>
-import axios from "axios";
+
 import Swal from "sweetalert2";
 
 export default {
@@ -75,27 +75,19 @@ export default {
      
     },
     loadData() {
-      const userId = this.$route.params.id;
-
-      if (!userId) {
-        console.error("รูปแบบ URL ไม่ถูกต้อง หากหน้านี้ต้องมีพารามิเตอร์ id");
+      if (!this.$store.state.StoreUser) {
+        console.error("go to login");
+        
         return; // Stop the function if userId is not defined
       }
-
-      axios
-        .get(`http://localhost:8080/persons/${userId}`)
-        .then((response) => {
           this.loading = false;
-          this.username = response.data.username;
-          this.name = response.data.firstName + " " + response.data.lastName;
-          this.position = response.data.typeUser;
-          this.major = response.data.faculty;
-          this.email = response.data.email;
-        })
-        .catch((error) => {
-          console.error("ข้อผิดพลาดในการดึงข้อมูลจาก API:", error);
-          this.loading = false;
-        });
+          this.username = this.$store.state.StoreUser.username;
+          this.name = this.$store.state.StoreUser.firstName + " " + this.$store.state.StoreUser.lastName;
+          this.position = this.$store.state.StoreUser.typeUser;
+          this.major = this.$store.state.StoreUser.faculty;
+          this.email = this.$store.state.StoreUser.email;
+        
+        
     },
   },
   beforeRouteUpdate(to, next) {

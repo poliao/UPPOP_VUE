@@ -17,8 +17,8 @@
                 </div>
 
                 <form @submit.prevent="login">
-                    <label for="username">ชื่อผู้ใช้</label>
-                    <input type="text" id="username" name="username" v-model="username" required>
+                    <label for="email">อีเมล</label>
+                    <input type="email" id="email" name="email" v-model="email" required>
                     <label for="password">รหัสผ่าน</label>
                     <input type="password" id="password" name="password" v-model="password" required>
                     <div class="d-flex justify-content-end">
@@ -47,37 +47,35 @@ export default {
     name: 'LoginView',
     data() {
         return {
-            username: '',
+            email: '',
             password: '',
             loginError: '',
-            TypeUser: '',
+            typeUser: '',
 
         };
     },
     methods: {
 
         async login() {
-            try {
-                const response = await axios.post('http://localhost:8080/persons/login', {
-                    username: this.username,
+            
+                const response = await axios.post('http://localhost:8080/api/persons/login', {
+                    email: this.email,
                     password: this.password,
                 });
-                console.log(response.data);
+                console.log(response);
+                // if (response.status === 200) {
+                //     if (response.data) {
+                //         this.$store.state.StoreUser = response.data;
+                //         this.$router.push({ path: `/` });
+                //     } else {
+                //         console.log('Login successful, but user ID not found in response.');
+                //     }
+                // } else {
+                //     console.log('Login failed.');
+                //     this.loginError = '* ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
 
-                if (response.status === 200) {
-                    this.$store.state.StoreTypeUser = response.data.typeUser;
-                    console.log(this.$store.state.StoreTypeUser);
-                    this.$router.push({ path: `/` });
-                } else {
-                    console.log('Login failed.');
-                    this.loginError = '* ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
-
-                }
-            } catch (error) {
-                console.error('An error occurred:', error);
-                this.loginError = '* ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
-
-            }
+                // }
+           
         },
     },
 };
